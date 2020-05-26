@@ -15,6 +15,6 @@ Ilość wątków pisarzy R i czytelników W można przekazać jako argumenty lin
 ReaderQ: 11 WriterQ: 10 [in: R:0 W:1]
 Oznacza to, że w kolejce przed czytelnią czeka 10 pisarzy i 11 czytelników a sama czytelnia zajęta jest przez jednego pisarza. Komunikat należy wypisywać w momencie zmiany którejkolwiek z tych
 
-[X] Zagłodzeni pisarze
-[X] Zagłodzeni czytelnicy
-[X] Poprawne rozwiązanie
+- [x] Zagłodzeni pisarze
+- [ ] Zagłodzeni czytelnicy
+- [x] Poprawne rozwiązanie
