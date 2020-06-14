@@ -3,12 +3,14 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <semaphore.h>
+#include <signal.h>
 /// The constant number of seconds spent in resource
 #define WAITCONST 10 
 
 //RESOURCE SEMAPHORE
 sem_t ResourceSem;
 
+static volatile  ushort exitFlag = 1;
 
 sem_t MutexSem;
 
@@ -28,13 +30,13 @@ void *Logger()
 {
     //lock this section od code
         pthread_mutex_lock(&MainLock);
-    for(;;)
+    while(exitFlag == 1)
     {
         pthread_cond_wait(&WriteNow, &MainLock); // wait for signal
         printf("\nReadersQ:%d WritersQ:%d [in:R:%d W:%d]", ReadersQueue,WritersQueue,ReadersCount,WritersCount); //When signalled print relevant output
     }
         pthread_mutex_unlock(&MainLock);// unlock resource
-
+//pthread_exit(NULL);
 
 }
 
@@ -46,7 +48,7 @@ void *Writer()
 {
 
     /// Writers try to enter and exit indefinetly
-    for(;;)
+    while(exitFlag == 1)
     {
         /// Entering procedure
     sem_wait(&ResourceSem);
@@ -65,7 +67,7 @@ void *Writer()
    // printf("\nWriter released the lock");
   // sleep(sleepS);
     }
-
+pthread_exit(NULL);
 }
 
 
@@ -76,7 +78,7 @@ void *Writer()
 void *Reader()
 {
     int sleepS = 0;
-    for(;;)
+    while(exitFlag == 1)
     {
     //Readers Entry Section (Only one reader fits the door :VVVV)
     sem_wait(&MutexSem);
@@ -110,9 +112,13 @@ void *Reader()
     //sleep(sleepS);
     }
     //printf("\nReader exited room Count is %d",ReadersCount);
+  //  pthread_exit(NULL);
 }
 
-
+void SetExitFlag()
+{
+exitFlag = 0;
+}
 
 ///
 ///param  argv[1] - number of readers
@@ -141,8 +147,10 @@ srand(5);
 /// allocating dynamic data structures 
 pthread_t *WritersArray = (pthread_t*)malloc(WRITERSCOUNT*(sizeof(pthread_t)));
 pthread_t *ReadersArray = (pthread_t*)malloc(READERSCOUNT*(sizeof(pthread_t)));
-pthread_t LogThread = (pthread_t)malloc(1*(sizeof(pthread_t)));
+pthread_t LogThread;
 int i = 0;
+
+signal(SIGINT,SetExitFlag);
 
 /// logger thread creation 
 pthread_create(&LogThread,NULL,Logger,NULL);
@@ -157,22 +165,22 @@ pthread_create(&LogThread,NULL,Logger,NULL);
     {
          pthread_create(&WritersArray[i],NULL,Writer,NULL);
     }
-    ///Wait for threads to finish (which they wont do  since program should run indefinietly)
+    ///Wait for threads to finish
     for(i = 0 ; i < WRITERSCOUNT; i++)
     {
         pthread_join(WritersArray[i], NULL);
     }
-      for(i = 0 ; i < ReadersCount; i++)
+    i = 0 ; // double check if variable gets zeroed
+
+      for(i = 0 ; i < READERSCOUNT; i++)
     {
         pthread_join(ReadersArray[i], NULL);
     }
 
-    pthread_join(LogThread,NULL);
-
+pthread_join(LogThread,NULL);
+// Dealloc operations
 free(ReadersArray);
 free(WritersArray);
-free(LogThread);
 
-    
-
+//pthread_exit(0)
 }
